@@ -1,0 +1,132 @@
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+
+    background: #03291F;
+    font-family: 'DM Sans', Arial, sans-serif;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 390px;
+    padding: 38px;
+
+    background: #F3F1E9;
+    border-radius: 4px;
+}
+
+/* BRAND */
+
+.login-brand {
+    display: block;
+    margin-bottom: 35px;
+
+    color: #03291F;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.login-brand span {
+    color: #087B52;
+    font-size: 23px;
+    margin-right: 7px;
+}
+
+/* TITRE */
+
+.login-card h2 {
+    margin-bottom: 8px;
+
+    color: #03291F;
+    font-size: 27px;
+    font-weight: 600;
+}
+
+.login-subtitle {
+    margin-bottom: 30px;
+    color: #78857D;
+    font-size: 13px;
+}
+
+/* FORMULAIRE */
+
+.login-page .form-group {
+    margin-bottom: 20px;
+}
+
+.login-page .form-group label {
+    display: block;
+    margin-bottom: 8px;
+
+    color: #03291F;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.login-page .form-group input {
+    width: 100%;
+    padding: 13px;
+
+    background: white;
+    border: 1px solid #D9DED8;
+    border-radius: 3px;
+    outline: none;
+
+    color: #03291F;
+    font-size: 13px;
+}
+
+.login-page .form-group input:focus {
+    border-color: #087B52;
+}
+
+.login-page .form-group input::placeholder {
+    color: #A5AEA8;
+}
+
+/* BOUTON */
+.login-page .login-card button[type="submit"] {
+    background-color: #F4A58F !important;
+    color: #03291F !important;
+    border: none;
+}
+
+.login-page .login-card button[type="submit"]:hover {
+    background-color: #E9927B !important;
+}
+/* ERREUR */
+
+.login-page .error-message {
+    margin-bottom: 15px;
+    color: #C0392B;
+    font-size: 12px;
+}
+
+/* RETOUR */
+
+.login-back {
+    display: block;
+    margin-top: 25px;
+
+    color: #64b389;
+    font-size: 12px;
+    text-align: center;
+    text-decoration: none;
+}
+
+.login-back:hover {
+    color: #087B52;
+}
+
+/* MOBILE */
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: 28px 22px;
+    }
+}
