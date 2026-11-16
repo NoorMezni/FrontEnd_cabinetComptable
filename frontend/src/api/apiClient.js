@@ -49,7 +49,7 @@ export async function apiRequest(path, options = {}) {
 
     // Handle errors
     if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 && auth) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             window.location.href = "/login";
