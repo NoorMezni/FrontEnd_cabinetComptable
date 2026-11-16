@@ -1,94 +1,117 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { getStatistiques } from "../api/statistiquesApi";
+import { getDashboard } from "../api/dashboardApi";
+
+function formatMontant(valeur) {
+    return (
+        Number(valeur ?? 0).toLocaleString("fr-FR", {
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3
+        }) + " DT"
+    );
+}
+
+// Transforme la reponse du back en liste de cartes selon le role
+function construireCartes(role, data) {
+    if (role === "ADMIN") {
+        return [
+            { label: "Administrateurs", value: data.nbAdmins },
+            { label: "Comptables", value: data.nbComptables },
+            { label: "Clients", value: data.nbClients },
+            { label: "Clients sans comptable", value: data.nbClientsSansComptable, alerte: true }
+        ];
+    }
+
+    const cartes = [];
+
+    if (role === "COMPTABLE") {
+        cartes.push({ label: "Mes clients", value: data.nbClients });
+    }
+
+    cartes.push(
+        { label: "Missions à faire", value: data.nbMissionsAFaire },
+        { label: "Missions en cours", value: data.nbMissionsEnCours },
+        { label: "Missions en retard", value: data.nbMissionsEnRetard, alerte: true },
+        { label: "Factures impayées", value: data.nbFacturesImpayees },
+        { label: "Factures en retard", value: data.nbFacturesEnRetard, alerte: true },
+        { label: "Montant impayé (TTC)", value: formatMontant(data.montantImpayeTTC) }
+    );
+
+    return cartes;
+}
 
 export default function Dashboard() {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
 
-    const [stats, setStats] = useState(null);
+    const [cartes, setCartes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
-        if (user?.role !== "ADMIN") {
-            setLoading(false);
+        if (!user) {
             return;
         }
 
-        getStatistiques()
-            .then(setStats)
+        // L'admin utilise /statistiques, les autres /dashboard
+        const requete = user.role === "ADMIN" ? getStatistiques() : getDashboard();
+
+        requete
+            .then((data) => setCartes(construireCartes(user.role, data)))
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
     }, [user]);
 
-    const cards = [
-        { label: "Administrateurs", value: stats?.nbAdmins },
-        { label: "Comptables", value: stats?.nbComptables },
-        { label: "Clients", value: stats?.nbClients },
-        {
-            label: "Clients sans comptable",
-            value: stats?.nbClientsSansComptable
-        }
-    ];
+    const titres = {
+        ADMIN: "Espace administrateur",
+        COMPTABLE: "Espace comptable",
+        CLIENT: "Espace client"
+    };
 
     return (
         <div style={{ padding: "40px" }}>
             <h1>Tableau de bord</h1>
-
-            <p>Bienvenue, {user?.nom} !</p>
-            <p>Rôle : {user?.role}</p>
-
-            <button onClick={logout}>Déconnexion</button>
+            <p>Bienvenue, {user?.nom} ! <strong>{titres[user?.role]}</strong></p>
 
             <hr style={{ margin: "30px 0" }} />
 
-            {user?.role === "ADMIN" && (
-                <>
-                    <h2>Statistiques générales</h2>
+            {loading && <p>Chargement...</p>}
 
-                    {loading && <p>Chargement...</p>}
+            {error && <p style={{ color: "red" }}>{error}</p>}
 
-                    {error && <p style={{ color: "red" }}>{error}</p>}
+            {!loading && !error && (
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "20px"
+                }}>
+                    {cartes.map((carte) => {
+                        const enAlerte = carte.alerte && Number(carte.value) > 0;
 
-                    {stats && (
-                        <div style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                            gap: "20px",
-                            marginTop: "20px"
-                        }}>
-                            {cards.map((card) => (
-                                <div
-                                    key={card.label}
-                                    style={{
-                                        background: "white",
-                                        padding: "25px",
-                                        borderRadius: "12px",
-                                        boxShadow: "0 3px 12px rgba(0,0,0,0.06)"
-                                    }}
-                                >
-                                    <p>{card.label}</p>
-                                    <h2 style={{
-                                        fontSize: "30px",
-                                        marginTop: "12px",
-                                        color: "#01B36C"
-                                    }}>
-                                        {card.value}
-                                    </h2>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </>
-            )}
-
-            {user?.role === "COMPTABLE" && (
-                <h2>Espace Comptable</h2>
-            )}
-
-            {user?.role === "CLIENT" && (
-                <h2>Espace Client</h2>
+                        return (
+                            <div
+                                key={carte.label}
+                                style={{
+                                    background: "white",
+                                    padding: "25px",
+                                    borderRadius: "12px",
+                                    boxShadow: "0 3px 12px rgba(0,0,0,0.06)",
+                                    borderLeft: "4px solid " + (enAlerte ? "#bd493d" : "#01B36C")
+                                }}
+                            >
+                                <p style={{ margin: 0, color: "#555" }}>{carte.label}</p>
+                                <h2 style={{
+                                    fontSize: "28px",
+                                    marginTop: "12px",
+                                    marginBottom: 0,
+                                    color: enAlerte ? "#bd493d" : "#01B36C"
+                                }}>
+                                    {carte.value}
+                                </h2>
+                            </div>
+                        );
+                    })}
+                </div>
             )}
         </div>
     );
