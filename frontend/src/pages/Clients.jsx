@@ -1,4 +1,4 @@
-
+import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import {
     getClients,
@@ -19,6 +19,8 @@ const initialForm = {
 };
 
 export default function Clients() {
+    const { user } = useAuth();
+    const isAdmin = user?.role === "ADMIN";
     const [clients, setClients] = useState([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
@@ -359,18 +361,20 @@ export default function Clients() {
                                 />
                             </label>
 
-                            <label style={labelStyle}>
-                                ID du comptable (facultatif)
-                                <input
-                                    style={inputStyle}
-                                    name="comptableId"
-                                    type="number"
-                                    min="1"
-                                    value={form.comptableId}
-                                    onChange={handleChange}
-                                    placeholder="Laisser vide si non affecté"
-                                />
-                            </label>
+                            {isAdmin && (
+                                <label style={labelStyle}>
+                                    ID du comptable (facultatif)
+                                    <input
+                                        style={inputStyle}
+                                        name="comptableId"
+                                        type="number"
+                                        min="1"
+                                        value={form.comptableId}
+                                        onChange={handleChange}
+                                        placeholder="Laisser vide si non affecté"
+                                    />
+                                </label>
+                            )}
                         </div>
 
                         <div style={{
@@ -530,14 +534,16 @@ export default function Clients() {
                                                 display: "flex",
                                                 gap: "8px"
                                             }}>
-                                                <button
-                                                    onClick={() =>
-                                                        openEditForm(client)
-                                                    }
-                                                    style={actionButton}
-                                                >
-                                                    Modifier
-                                                </button>
+                                                {isAdmin && (
+                                                    <button
+                                                        onClick={() =>
+                                                            openEditForm(client)
+                                                        }
+                                                        style={actionButton}
+                                                    >
+                                                        Modifier
+                                                    </button>
+                                                )}
 
                                                 <button
                                                     onClick={() =>
