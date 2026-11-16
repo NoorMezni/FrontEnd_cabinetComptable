@@ -1,6 +1,13 @@
 
 import { apiRequest } from "./apiClient";
 
+export function affecterClient(clientId, comptableId) {
+    return apiRequest(`/clients/${clientId}/comptable`, {
+        method: "PUT",
+        body: { comptableId: Number(comptableId) }
+    });
+}
+
 export function getClients() {
     return apiRequest("/clients");
 }
