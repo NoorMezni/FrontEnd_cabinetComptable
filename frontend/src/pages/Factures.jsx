@@ -2,662 +2,594 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  getFactures,
-  getMyFactures,
-  createFacture,
-  updateFacture,
-  payerFacture,
-  annulerFacture,
+    getFactures,
+    getMyFactures,
+    createFacture,
+    updateFacture,
+    payerFacture,
+    annulerFacture,
 } from "../api/factureApi";
 
 import { getClients } from "../api/clientApi";
 import { useAuth } from "../hooks/useAuth";
 
+import Loading from "../components/Loading";
+import ErrorMessage from "../components/ErrorMessage";
+import Notice from "../components/Notice";
+import EmptyState from "../components/EmptyState";
+import StatusBadge from "../components/StatusBadge";
+
+import formatMoney from "../utils/formatMoney";
+
+import "../styles/Factures.css";
+
 const initialForm = {
-  numero: "",
-  description: "",
-  dateEmission: "",
-  dateEcheance: "",
-  montantHT: "",
-  tauxTVA: 19,
-  clientId: "",
+    numero: "",
+    description: "",
+    dateEmission: "",
+    dateEcheance: "",
+    montantHT: "",
+    tauxTVA: 19,
+    clientId: "",
 };
 
 export default function Factures() {
-  const { user } = useAuth();
-  const role = user?.role;
+    const { user } = useAuth();
+    const role = user?.role;
 
-  const canManage = role === "ADMIN" || role === "COMPTABLE";
+    const canManage = role === "ADMIN" || role === "COMPTABLE";
 
-  const [factures, setFactures] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [form, setForm] = useState(initialForm);
-  const [editingId, setEditingId] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+    const [factures, setFactures] = useState([]);
+    const [clients, setClients] = useState([]);
+    const [form, setForm] = useState(initialForm);
 
-  async function loadData() {
-    setLoading(true);
-    setError("");
+    const [editingId, setEditingId] = useState(null);
+    const [showForm, setShowForm] = useState(false);
+    const [search, setSearch] = useState("");
 
-    try {
-      // ADMIN et COMPTABLE : toutes les factures
-      // CLIENT : uniquement ses propres factures
-      const facturesPromise = canManage
-        ? getFactures()
-        : getMyFactures();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
-      const clientsPromise = canManage
-        ? getClients()
-        : Promise.resolve([]);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
-      const [facturesData, clientsData] = await Promise.all([
-        facturesPromise,
-        clientsPromise,
-      ]);
+    async function loadData() {
+        setLoading(true);
+        setError("");
 
-      setFactures(
-        Array.isArray(facturesData) ? facturesData : []
-      );
+        try {
+            const facturesPromise = canManage
+                ? getFactures()
+                : getMyFactures();
 
-      setClients(
-        Array.isArray(clientsData) ? clientsData : []
-      );
-    } catch (err) {
-      setError(err.message || "Impossible de charger les factures.");
-    } finally {
-      setLoading(false);
-    }
-  }
+            const clientsPromise = canManage
+                ? getClients()
+                : Promise.resolve([]);
 
-  useEffect(() => {
-    if (role) {
-      loadData();
-    }
-  }, [role]);
+            const [facturesData, clientsData] = await Promise.all([
+                facturesPromise,
+                clientsPromise,
+            ]);
 
-  const filteredFactures = useMemo(() => {
-    const value = search.toLowerCase().trim();
+            setFactures(
+                Array.isArray(facturesData) ? facturesData : []
+            );
 
-    if (!value) return factures;
-
-    return factures.filter((facture) =>
-      [
-        facture.numero,
-        facture.description,
-        facture.statut,
-        facture.clientId,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(value)
-    );
-  }, [factures, search]);
-
-  function handleChange(event) {
-    const { name, value } = event.target;
-
-    setForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-  }
-
-  function openCreateForm() {
-    setEditingId(null);
-    setForm(initialForm);
-    setError("");
-    setSuccess("");
-    setShowForm(true);
-  }
-
-  function openEditForm(facture) {
-    setEditingId(facture.id);
-
-    setForm({
-      numero: facture.numero || "",
-      description: facture.description || "",
-      dateEmission: facture.dateEmission || "",
-      dateEcheance: facture.dateEcheance || "",
-      montantHT: facture.montantHT ?? "",
-      tauxTVA: facture.tauxTVA ?? 19,
-      clientId: facture.clientId ?? "",
-    });
-
-    setError("");
-    setSuccess("");
-    setShowForm(true);
-  }
-
-  function closeForm() {
-    setShowForm(false);
-    setEditingId(null);
-    setForm(initialForm);
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-
-    if (!canManage) return;
-
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    const data = {
-      numero: form.numero.trim(),
-      description: form.description.trim(),
-      dateEmission: form.dateEmission,
-      dateEcheance: form.dateEcheance,
-      montantHT: Number(form.montantHT),
-      tauxTVA: Number(form.tauxTVA),
-      clientId: Number(form.clientId),
-    };
-
-    try {
-      if (editingId) {
-        await updateFacture(editingId, data);
-        setSuccess("Facture modifiée avec succès.");
-      } else {
-        await createFacture(data);
-        setSuccess("Facture créée avec succès.");
-      }
-
-      closeForm();
-      await loadData();
-    } catch (err) {
-      setError(err.message || "Une erreur est survenue.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handlePayment(id) {
-    if (!canManage) return;
-
-    if (!window.confirm("Confirmer le paiement de cette facture ?")) {
-      return;
+            setClients(
+                Array.isArray(clientsData) ? clientsData : []
+            );
+        } catch (err) {
+            setError(
+                err.message || "Impossible de charger les factures."
+            );
+        } finally {
+            setLoading(false);
+        }
     }
 
-    setError("");
-    setSuccess("");
+    useEffect(() => {
+        if (role) {
+            loadData();
+        }
+    }, [role]);
 
-    try {
-      await payerFacture(id);
-      setSuccess("Facture marquée comme payée.");
-      await loadData();
-    } catch (err) {
-      setError(err.message || "Impossible de payer cette facture.");
-    }
-  }
+    const filteredFactures = useMemo(() => {
+        const value = search.toLowerCase().trim();
 
-  async function handleCancel(id) {
-    if (!canManage) return;
+        if (!value) return factures;
 
-    if (!window.confirm("Voulez-vous vraiment annuler cette facture ?")) {
-      return;
-    }
+        return factures.filter((facture) =>
+            [
+                facture.numero,
+                facture.description,
+                facture.statut,
+                facture.clientId,
+            ]
+                .join(" ")
+                .toLowerCase()
+                .includes(value)
+        );
+    }, [factures, search]);
 
-    setError("");
-    setSuccess("");
+    function handleChange(event) {
+        const { name, value } = event.target;
 
-    try {
-      await annulerFacture(id);
-      setSuccess("Facture annulée.");
-      await loadData();
-    } catch (err) {
-      setError(err.message || "Impossible d'annuler cette facture.");
-    }
-  }
-
-  function formatMoney(value) {
-    return `${Number(value || 0).toFixed(2)} TND`;
-  }
-
-  function statusStyle(statut) {
-    if (statut === "PAYEE") {
-      return { background: "#DCFCE7", color: "#166534" };
+        setForm((previous) => ({
+            ...previous,
+            [name]: value,
+        }));
     }
 
-    if (statut === "ANNULEE") {
-      return { background: "#FEE2E2", color: "#991B1B" };
+    function openCreateForm() {
+        setEditingId(null);
+        setForm(initialForm);
+        setError("");
+        setSuccess("");
+        setShowForm(true);
     }
 
-    return { background: "#FEF3C7", color: "#92400E" };
-  }
+    function openEditForm(facture) {
+        setEditingId(facture.id);
 
-  const styles = {
-    page: {
-      maxWidth: 1200,
-      margin: "0 auto",
-    },
-    heading: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      flexWrap: "wrap",
-      gap: 16,
-      marginBottom: 24,
-    },
-    title: {
-      color: "#012B1D",
-      fontSize: 28,
-      margin: 0,
-    },
-    subtitle: {
-      color: "#64748B",
-      marginTop: 7,
-    },
-    button: {
-      background: "#012B1D",
-      color: "white",
-      border: "none",
-      borderRadius: 9,
-      padding: "11px 18px",
-      cursor: "pointer",
-      fontWeight: 600,
-    },
-    secondary: {
-      background: "#E8F3ED",
-      color: "#012B1D",
-      border: "none",
-      borderRadius: 7,
-      padding: "8px 12px",
-      cursor: "pointer",
-      fontWeight: 600,
-    },
-    danger: {
-      background: "#FEE2E2",
-      color: "#991B1B",
-      border: "none",
-      borderRadius: 7,
-      padding: "8px 12px",
-      cursor: "pointer",
-      fontWeight: 600,
-    },
-    card: {
-      background: "white",
-      borderRadius: 13,
-      padding: 22,
-      boxShadow: "0 3px 15px rgba(0,0,0,0.04)",
-      marginBottom: 20,
-    },
-    input: {
-      width: "100%",
-      padding: 11,
-      border: "1px solid #DCE5DF",
-      borderRadius: 8,
-      boxSizing: "border-box",
-      marginTop: 6,
-    },
-    label: {
-      display: "block",
-      color: "#334155",
-      fontWeight: 600,
-      fontSize: 13,
-      marginBottom: 14,
-    },
-    tableWrapper: {
-      overflowX: "auto",
-    },
-    table: {
-      width: "100%",
-      borderCollapse: "collapse",
-      minWidth: 850,
-    },
-    th: {
-      textAlign: "left",
-      padding: 13,
-      color: "#64748B",
-      fontSize: 12,
-      borderBottom: "1px solid #E2E8F0",
-      whiteSpace: "nowrap",
-    },
-    td: {
-      padding: 13,
-      borderBottom: "1px solid #F1F5F9",
-      color: "#334155",
-      fontSize: 13,
-    },
-    alert: {
-      padding: 12,
-      borderRadius: 8,
-      marginBottom: 16,
-      background: "#FEE2E2",
-      color: "#991B1B",
-    },
-    success: {
-      padding: 12,
-      borderRadius: 8,
-      marginBottom: 16,
-      background: "#DCFCE7",
-      color: "#166534",
-    },
-  };
+        setForm({
+            numero: facture.numero || "",
+            description: facture.description || "",
+            dateEmission: facture.dateEmission || "",
+            dateEcheance: facture.dateEcheance || "",
+            montantHT: facture.montantHT ?? "",
+            tauxTVA: facture.tauxTVA ?? 19,
+            clientId: facture.clientId ?? "",
+        });
 
-  return (
-    <div style={styles.page}>
-      <div style={styles.heading}>
-        <div>
-          <h1 style={styles.title}>
-            {canManage ? "Gestion des factures" : "Mes factures"}
-          </h1>
+        setError("");
+        setSuccess("");
+        setShowForm(true);
+    }
 
-          <p style={styles.subtitle}>
-            {canManage
-              ? "Consultez et gérez les factures du cabinet."
-              : "Consultez vos factures et leur état de paiement."}
-          </p>
-        </div>
+    function closeForm() {
+        setShowForm(false);
+        setEditingId(null);
+        setForm(initialForm);
+    }
 
-        {canManage && (
-          <button style={styles.button} onClick={openCreateForm}>
-            + Nouvelle facture
-          </button>
-        )}
-      </div>
+    async function handleSubmit(event) {
+        event.preventDefault();
 
-      {error && <div style={styles.alert}>{error}</div>}
-      {success && <div style={styles.success}>{success}</div>}
+        if (!canManage) return;
 
-      {showForm && canManage && (
-        <div style={styles.card}>
-          <h2 style={{ color: "#012B1D", marginTop: 0 }}>
-            {editingId ? "Modifier la facture" : "Créer une facture"}
-          </h2>
+        setSaving(true);
+        setError("");
+        setSuccess("");
 
-          <form onSubmit={handleSubmit}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: 12,
-              }}
-            >
-              <label style={styles.label}>
-                Numéro de facture *
-                <input
-                  style={styles.input}
-                  name="numero"
-                  value={form.numero}
-                  onChange={handleChange}
-                  required
-                  maxLength={30}
-                />
-              </label>
+        const data = {
+            numero: form.numero.trim(),
+            description: form.description.trim(),
+            dateEmission: form.dateEmission,
+            dateEcheance: form.dateEcheance,
+            montantHT: Number(form.montantHT),
+            tauxTVA: Number(form.tauxTVA),
+            clientId: Number(form.clientId),
+        };
 
-              <label style={styles.label}>
-                Client *
-                <select
-                  style={styles.input}
-                  name="clientId"
-                  value={form.clientId}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Choisir un client</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.nom}
-                    </option>
-                  ))}
-                </select>
-              </label>
+        try {
+            if (editingId !== null) {
+                await updateFacture(editingId, data);
+                setSuccess("Facture modifiée avec succès.");
+            } else {
+                await createFacture(data);
+                setSuccess("Facture créée avec succès.");
+            }
 
-              <label style={styles.label}>
-                Date d'émission *
-                <input
-                  style={styles.input}
-                  type="date"
-                  name="dateEmission"
-                  value={form.dateEmission}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
+            closeForm();
+            await loadData();
+        } catch (err) {
+            setError(err.message || "Une erreur est survenue.");
+        } finally {
+            setSaving(false);
+        }
+    }
 
-              <label style={styles.label}>
-                Date d'échéance *
-                <input
-                  style={styles.input}
-                  type="date"
-                  name="dateEcheance"
-                  value={form.dateEcheance}
-                  onChange={handleChange}
-                  min={form.dateEmission || undefined}
-                  required
-                />
-              </label>
+    async function handlePayment(id) {
+        if (!canManage) return;
 
-              <label style={styles.label}>
-                Montant HT (TND) *
-                <input
-                  style={styles.input}
-                  type="number"
-                  name="montantHT"
-                  value={form.montantHT}
-                  onChange={handleChange}
-                  min="0"
-                  step="0.01"
-                  required
-                />
-              </label>
+        if (!window.confirm("Confirmer le paiement de cette facture ?")) {
+            return;
+        }
 
-              <label style={styles.label}>
-                Taux TVA (%) *
-                <input
-                  style={styles.input}
-                  type="number"
-                  name="tauxTVA"
-                  value={form.tauxTVA}
-                  onChange={handleChange}
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  required
-                />
-              </label>
-            </div>
+        setError("");
+        setSuccess("");
 
-            <label style={styles.label}>
-              Description *
-              <textarea
-                style={{
-                  ...styles.input,
-                  minHeight: 80,
-                  resize: "vertical",
-                }}
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                maxLength={255}
-                required
-              />
-            </label>
+        try {
+            await payerFacture(id);
+            setSuccess("Facture marquée comme payée.");
+            await loadData();
+        } catch (err) {
+            setError(
+                err.message || "Impossible de payer cette facture."
+            );
+        }
+    }
 
-            <div style={{ display: "flex", gap: 10 }}>
-              <button
-                type="submit"
-                style={styles.button}
-                disabled={saving}
-              >
-                {saving ? "Enregistrement..." : "Enregistrer"}
-              </button>
+    async function handleCancel(id) {
+        if (!canManage) return;
 
-              <button
-                type="button"
-                style={styles.secondary}
-                onClick={closeForm}
-              >
-                Annuler
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+        if (!window.confirm("Voulez-vous vraiment annuler cette facture ?")) {
+            return;
+        }
 
-      <div style={styles.card}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            flexWrap: "wrap",
-            marginBottom: 20,
-          }}
-        >
-          <h2 style={{ color: "#012B1D", margin: 0 }}>
-            {canManage ? "Liste des factures" : "Mes factures"}
-          </h2>
+        setError("");
+        setSuccess("");
 
-          <input
-            style={{
-              ...styles.input,
-              width: 280,
-              marginTop: 0,
-            }}
-            placeholder="Rechercher une facture..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </div>
+        try {
+            await annulerFacture(id);
+            setSuccess("Facture annulée.");
+            await loadData();
+        } catch (err) {
+            setError(
+                err.message || "Impossible d'annuler cette facture."
+            );
+        }
+    }
 
-        {loading ? (
-          <p>Chargement des factures...</p>
-        ) : filteredFactures.length === 0 ? (
-          <p style={{ color: "#64748B" }}>
-            Aucune facture trouvée.
-          </p>
-        ) : (
-          <div style={styles.tableWrapper}>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Numéro</th>
-                  <th style={styles.th}>Description</th>
-                  {canManage && (
-                    <th style={styles.th}>Client</th>
-                  )}
-                  <th style={styles.th}>Émission</th>
-                  <th style={styles.th}>Échéance</th>
-                  <th style={styles.th}>Montant TTC</th>
-                  <th style={styles.th}>Statut</th>
-                  {canManage && (
-                    <th style={styles.th}>Actions</th>
-                  )}
-                </tr>
-              </thead>
+    function getStatusLabel(statut) {
+        switch (statut) {
+            case "PAYEE":
+                return "payé";
+            case "ANNULEE":
+                return "annulé";
+            case "EMISE":
+                return "émise";
+            default:
+                return statut || "Inconnu";
+        }
+    }
 
-              <tbody>
-                {filteredFactures.map((facture) => {
-                  const client = clients.find(
-                    (item) => item.id === facture.clientId
-                  );
+    return (
+        <div className="factures-page">
 
-                  return (
-                    <tr key={facture.id}>
-                      <td style={styles.td}>
-                        <strong>{facture.numero}</strong>
-                      </td>
+            {/* En-tête */}
+            <header className="factures-header">
+                <div>
+                    <h1>
+                        {canManage
+                            ? "Gestion des factures"
+                            : "Mes factures"}
+                    </h1>
 
-                      <td style={styles.td}>
-                        {facture.description}
-                      </td>
+                    <p>
+                        {canManage
+                            ? "Consultez et gérez les factures du cabinet."
+                            : "Consultez vos factures et leur état de paiement."}
+                    </p>
+                </div>
 
-                      {canManage && (
-                        <td style={styles.td}>
-                          {client?.nom || `Client #${facture.clientId}`}
-                        </td>
-                      )}
+                {canManage && (
+                    <button
+                        type="button"
+                        className="factures-primary-button"
+                        onClick={openCreateForm}
+                    >
+                        + Nouvelle facture
+                    </button>
+                )}
+            </header>
 
-                      <td style={styles.td}>
-                        {facture.dateEmission}
-                      </td>
+            {/* Messages */}
+            {error && (
+                <div className="factures-message">
+                    <ErrorMessage
+                        message={error}
+                        onRetry={loadData}
+                    />
+                </div>
+            )}
 
-                      <td style={styles.td}>
-                        {facture.dateEcheance}
+            {success && (
+                <div className="factures-message">
+                    <Notice
+                        type="success"
+                        message={success}
+                    />
+                </div>
+            )}
 
-                        {facture.enRetard &&
-                          facture.statut === "EMISE" && (
-                            <div
-                              style={{
-                                color: "#DC2626",
-                                fontSize: 11,
-                              }}
-                            >
-                              En retard
-                            </div>
-                          )}
-                      </td>
+            {/* Formulaire */}
+            {showForm && canManage && (
+                <section className="factures-form-card">
+                    <div className="factures-form-header">
+                        <h2>
+                            {editingId !== null
+                                ? "Modifier la facture"
+                                : "Créer une facture"}
+                        </h2>
 
-                      <td style={styles.td}>
-                        <strong>
-                          {formatMoney(facture.montantTTC)}
-                        </strong>
-                      </td>
-
-                      <td style={styles.td}>
-                        <span
-                          style={{
-                            ...statusStyle(facture.statut),
-                            padding: "5px 9px",
-                            borderRadius: 20,
-                            fontSize: 11,
-                            fontWeight: 700,
-                          }}
+                        <button
+                            type="button"
+                            className="factures-close-button"
+                            onClick={closeForm}
+                            aria-label="Fermer le formulaire"
                         >
-                          {facture.statut}
+                            ×
+                        </button>
+                    </div>
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="factures-form-grid">
+
+                            <label className="factures-field">
+                                Numéro de facture *
+                                <input
+                                    name="numero"
+                                    value={form.numero}
+                                    onChange={handleChange}
+                                    required
+                                    maxLength={30}
+                                />
+                            </label>
+
+                            <label className="factures-field">
+                                Client *
+                                <select
+                                    name="clientId"
+                                    value={form.clientId}
+                                    onChange={handleChange}
+                                    required
+                                >
+                                    <option value="">
+                                        Choisir un client
+                                    </option>
+
+                                    {clients.map((client) => (
+                                        <option
+                                            key={client.id}
+                                            value={client.id}
+                                        >
+                                            {client.nom}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+
+                            <label className="factures-field">
+                                Date d'émission *
+                                <input
+                                    type="date"
+                                    name="dateEmission"
+                                    value={form.dateEmission}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </label>
+
+                            <label className="factures-field">
+                                Date d'échéance *
+                                <input
+                                    type="date"
+                                    name="dateEcheance"
+                                    value={form.dateEcheance}
+                                    onChange={handleChange}
+                                    min={form.dateEmission || undefined}
+                                    required
+                                />
+                            </label>
+
+                            <label className="factures-field">
+                                Montant HT (TND) *
+                                <input
+                                    type="number"
+                                    name="montantHT"
+                                    value={form.montantHT}
+                                    onChange={handleChange}
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                />
+                            </label>
+
+                            <label className="factures-field">
+                                Taux TVA (%) *
+                                <input
+                                    type="number"
+                                    name="tauxTVA"
+                                    value={form.tauxTVA}
+                                    onChange={handleChange}
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    required
+                                />
+                            </label>
+                        </div>
+
+                        <label className="factures-field factures-description">
+                            Description *
+                            <textarea
+                                name="description"
+                                value={form.description}
+                                onChange={handleChange}
+                                maxLength={255}
+                                required
+                            />
+                        </label>
+
+                        <div className="factures-form-actions">
+                            <button
+                                type="submit"
+                                className="factures-save-button"
+                                disabled={saving}
+                            >
+                                {saving
+                                    ? "Enregistrement..."
+                                    : "Enregistrer"}
+                            </button>
+
+                            <button
+                                type="button"
+                                className="factures-cancel-button"
+                                onClick={closeForm}
+                                disabled={saving}
+                            >
+                                Annuler
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            )}
+
+            {/* Liste des factures */}
+            <section className="factures-list-card">
+                <div className="factures-list-header">
+                    <div>
+                        <h2>
+                            {canManage
+                                ? "Liste des factures"
+                                : "Mes factures"}
+                        </h2>
+
+                        <span className="factures-count">
+                            {filteredFactures.length} facture(s)
                         </span>
-                      </td>
+                    </div>
 
-                      {canManage && (
-                        <td style={styles.td}>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: 6,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            {facture.statut === "EMISE" && (
-                              <>
-                                <button
-                                  style={styles.secondary}
-                                  onClick={() => openEditForm(facture)}
-                                >
-                                  Modifier
-                                </button>
+                    <input
+                        type="search"
+                        className="factures-search"
+                        placeholder="Rechercher une facture..."
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                    />
+                </div>
 
-                                <button
-                                  style={styles.secondary}
-                                  onClick={() => handlePayment(facture.id)}
-                                >
-                                  Payer
-                                </button>
+                {loading ? (
+                    <Loading message="Chargement des factures..." />
+                ) : filteredFactures.length === 0 ? (
+                    <EmptyState
+                        title={
+                            search
+                                ? "Aucun résultat"
+                                : "Aucune facture disponible"
+                        }
+                        message={
+                            search
+                                ? "Aucune facture ne correspond à votre recherche."
+                                : "Les factures apparaîtront ici lorsqu'elles seront disponibles."
+                        }
+                    />
+                ) : (
+                    <div className="factures-table-container">
+                        <table className="factures-table">
+                            <thead>
+                                <tr>
+                                    <th>Numéro</th>
+                                    <th>Description</th>
 
-                                <button
-                                  style={styles.danger}
-                                  onClick={() => handleCancel(facture.id)}
-                                >
-                                  Annuler
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+                                    {canManage && <th>Client</th>}
+
+                                    <th>Émission</th>
+                                    <th>Échéance</th>
+                                    <th>Montant TTC</th>
+                                    <th>Statut</th>
+
+                                    {canManage && <th>Actions</th>}
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {filteredFactures.map((facture) => {
+                                    const client = clients.find(
+                                        (item) =>
+                                            item.id === facture.clientId
+                                    );
+
+                                    return (
+                                        <tr key={facture.id}>
+                                            <td className="factures-number">
+                                                {facture.numero}
+                                            </td>
+
+                                            <td className="factures-description-cell">
+                                                {facture.description}
+                                            </td>
+
+                                            {canManage && (
+                                                <td>
+                                                    {client?.nom ||
+                                                        `Client #${facture.clientId}`}
+                                                </td>
+                                            )}
+
+                                            <td>{facture.dateEmission}</td>
+
+                                            <td>
+                                                {facture.dateEcheance}
+
+                                                {facture.enRetard &&
+                                                    facture.statut === "EMISE" && (
+                                                        <span className="factures-late">
+                                                            En retard
+                                                        </span>
+                                                    )}
+                                            </td>
+
+                                            <td className="factures-amount">
+                                                {formatMoney(facture.montantTTC)}
+                                            </td>
+
+                                            <td>
+                                                <StatusBadge
+                                                    status={getStatusLabel(
+                                                        facture.statut
+                                                    )}
+                                                />
+                                            </td>
+
+                                            {canManage && (
+                                                <td>
+                                                    <div className="factures-actions">
+                                                        {facture.statut === "EMISE" && (
+                                                            <>
+                                                                <button
+                                                                    type="button"
+                                                                    className="factures-edit-button"
+                                                                    onClick={() =>
+                                                                        openEditForm(facture)
+                                                                    }
+                                                                >
+                                                                    Modifier
+                                                                </button>
+
+                                                                <button
+                                                                    type="button"
+                                                                    className="factures-pay-button"
+                                                                    onClick={() =>
+                                                                        handlePayment(facture.id)
+                                                                    }
+                                                                >
+                                                                    Payer
+                                                                </button>
+
+                                                                <button
+                                                                    type="button"
+                                                                    className="factures-cancel-button"
+                                                                    onClick={() =>
+                                                                        handleCancel(facture.id)
+                                                                    }
+                                                                >
+                                                                    Annuler
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            )}
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </section>
+        </div>
+    );
 }

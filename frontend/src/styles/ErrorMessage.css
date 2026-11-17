@@ -1,0 +1,43 @@
+
+.error-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: var(--color-danger-bg);
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md);
+    color: var(--color-danger);
+    font-family: var(--font-family);
+}
+
+.error-message-icon {
+    flex-shrink: 0;
+}
+
+.error-message-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.error-message-content p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.error-retry-button {
+    align-self: flex-start;
+    padding: 8px 14px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--color-danger);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.error-retry-button:hover {
+    opacity: 0.9;
+}

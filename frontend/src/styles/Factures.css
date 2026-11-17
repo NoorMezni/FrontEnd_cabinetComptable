@@ -1,0 +1,355 @@
+
+.factures-page {
+    width: 100%;
+    max-width: 1200px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 30px;
+    box-sizing: border-box;
+    font-family: var(--font-family);
+}
+
+.factures-page * {
+    box-sizing: border-box;
+}
+
+.factures-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-bottom: 25px;
+}
+
+.factures-header h1 {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: 28px;
+}
+
+.factures-header p {
+    margin-top: 8px;
+    color: var(--color-text-muted);
+    font-size: 14px;
+}
+
+.factures-primary-button,
+.factures-save-button {
+    padding: 12px 19px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--color-primary);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.factures-primary-button:hover {
+    background: var(--color-primary-light);
+}
+
+.factures-message {
+    margin-bottom: 18px;
+}
+
+.factures-form-card,
+.factures-list-card {
+    margin-bottom: 22px;
+    padding: 24px;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.factures-form-header,
+.factures-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.factures-form-header h2,
+.factures-list-header h2 {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: 19px;
+}
+
+.factures-close-button {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 50%;
+    background: var(--color-background);
+    color: var(--color-text);
+    font-size: 23px;
+    cursor: pointer;
+}
+
+.factures-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 17px;
+    margin-top: 24px;
+}
+
+.factures-field {
+    display: block;
+    min-width: 0;
+    margin-bottom: 15px;
+    color: var(--color-primary);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.factures-field input,
+.factures-field select,
+.factures-field textarea {
+    display: block;
+    width: 100%;
+    margin-top: 7px;
+    padding: 11px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: white;
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.factures-field input,
+.factures-field select {
+    min-height: 42px;
+}
+
+.factures-field textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.factures-field input:focus,
+.factures-field select:focus,
+.factures-field textarea:focus,
+.factures-search:focus {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 1px;
+}
+
+.factures-description {
+    margin-top: 8px;
+}
+
+.factures-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.factures-save-button {
+    background: var(--color-secondary);
+}
+
+.factures-save-button:hover {
+    background: var(--color-primary-light);
+}
+
+.factures-cancel-button {
+    padding: 11px 17px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--color-background);
+    color: var(--color-primary);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.factures-save-button:disabled,
+.factures-cancel-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.factures-list-header {
+    margin-bottom: 20px;
+}
+
+.factures-list-header h2 {
+    margin-bottom: 5px;
+}
+
+.factures-count {
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+.factures-search {
+    width: 280px;
+    max-width: 100%;
+    min-height: 42px;
+    padding: 10px 13px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+}
+
+.factures-table-container {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: var(--radius-sm);
+}
+
+.factures-table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.factures-table thead {
+    background: var(--color-background);
+}
+
+.factures-table th {
+    padding: 14px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.factures-table td {
+    padding: 14px;
+    border-bottom: 1px solid #edf0ee;
+    color: #334155;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.factures-table tbody tr:hover {
+    background: #fafcfb;
+}
+
+.factures-number {
+    color: var(--color-primary) !important;
+    font-weight: 700;
+}
+
+.factures-description-cell {
+    max-width: 220px;
+    overflow-wrap: anywhere;
+}
+
+.factures-amount {
+    color: var(--color-primary) !important;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.factures-late {
+    display: block;
+    margin-top: 5px;
+    color: var(--color-danger);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.factures-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.factures-edit-button,
+.factures-pay-button,
+.factures-actions .factures-cancel-button {
+    padding: 7px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.factures-edit-button {
+    background: #fff3e9;
+    color: #a85c35;
+}
+
+.factures-pay-button {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.factures-actions .factures-cancel-button {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+}
+
+/* Tablettes */
+@media (max-width: 900px) {
+    .factures-page {
+        padding: 24px 18px;
+    }
+
+    .factures-form-card,
+    .factures-list-card {
+        padding: 19px;
+    }
+}
+
+/* Téléphones */
+@media (max-width: 600px) {
+    .factures-page {
+        padding: 18px 12px;
+    }
+
+    .factures-header {
+        align-items: stretch;
+    }
+
+    .factures-header h1 {
+        font-size: 23px;
+    }
+
+    .factures-primary-button {
+        width: 100%;
+    }
+
+    .factures-form-card,
+    .factures-list-card {
+        padding: 16px 12px;
+        margin-bottom: 16px;
+    }
+
+    .factures-form-header h2,
+    .factures-list-header h2 {
+        font-size: 17px;
+    }
+
+    .factures-form-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .factures-list-header {
+        align-items: stretch;
+    }
+
+    .factures-search {
+        width: 100%;
+    }
+
+    .factures-form-actions {
+        flex-direction: column;
+    }
+
+    .factures-save-button,
+    .factures-form-actions .factures-cancel-button {
+        width: 100%;
+    }
+}
