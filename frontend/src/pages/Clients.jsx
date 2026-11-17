@@ -1,11 +1,21 @@
+
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
+
 import {
     getClients,
     createClient,
     deleteClient,
     updateClient
 } from "../api/clientApi";
+
+import Loading from "../components/Loading";
+import ErrorMessage from "../components/ErrorMessage";
+import Notice from "../components/Notice";
+import EmptyState from "../components/EmptyState";
+import StatusBadge from "../components/StatusBadge";
+
+import "../styles/Clients.css";
 
 const initialForm = {
     nom: "",
@@ -21,10 +31,13 @@ const initialForm = {
 export default function Clients() {
     const { user } = useAuth();
     const isAdmin = user?.role === "ADMIN";
+
     const [clients, setClients] = useState([]);
     const [search, setSearch] = useState("");
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
@@ -45,7 +58,7 @@ export default function Clients() {
                     : data?.clients || []
             );
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Impossible de charger les clients.");
         } finally {
             setLoading(false);
         }
@@ -91,6 +104,13 @@ export default function Clients() {
         setSuccess("");
     };
 
+    const closeForm = () => {
+        setShowForm(false);
+        setEditingClient(null);
+        setForm(initialForm);
+        setError("");
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -121,6 +141,7 @@ export default function Clients() {
                     ...clientData,
                     motDePasse: form.motDePasse
                 });
+
                 setSuccess("Client ajouté avec succès !");
             }
 
@@ -130,7 +151,7 @@ export default function Clients() {
 
             await loadClients();
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Une erreur est survenue.");
         } finally {
             setSaving(false);
         }
@@ -148,10 +169,12 @@ export default function Clients() {
 
         try {
             await deleteClient(client.id);
+
             setSuccess("Client désactivé avec succès !");
+
             await loadClients();
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Impossible de désactiver ce client.");
         }
     };
 
@@ -164,62 +187,23 @@ export default function Clients() {
         );
     });
 
-    const inputStyle = {
-        width: "100%",
-        padding: "11px 13px",
-        border: "1px solid #dce5df",
-        borderRadius: "8px",
-        fontSize: "14px",
-        marginTop: "7px"
-    };
-
-    const labelStyle = {
-        display: "block",
-        fontSize: "14px",
-        fontWeight: "600",
-        color: "#012B1D",
-        marginBottom: "16px"
-    };
-
     return (
-        <div style={{
-            padding: "35px",
-            background: "#f5f8f6",
-            minHeight: "100vh"
-        }}>
+        <div className="clients-page">
 
-            {/* Header */}
-            <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "15px"
-            }}>
+            {/* En-tête */}
+            <div className="clients-header">
                 <div>
-                    <h1 style={{ color: "#012B1D" }}>
-                        Gestion des clients
-                    </h1>
+                    <h1>Gestion des clients</h1>
 
-                    <p style={{
-                        color: "#75847b",
-                        marginTop: "8px"
-                    }}>
+                    <p>
                         Gérez les informations des clients du cabinet.
                     </p>
                 </div>
 
                 <button
+                    type="button"
+                    className="clients-primary-button"
                     onClick={openCreateForm}
-                    style={{
-                        background: "#012B1D",
-                        color: "white",
-                        padding: "12px 20px",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        fontWeight: "600"
-                    }}
                 >
                     + Ajouter un client
                 </button>
@@ -227,59 +211,49 @@ export default function Clients() {
 
             {/* Messages */}
             {error && (
-                <div style={{
-                    background: "#fff0ed",
-                    color: "#b9382b",
-                    padding: "13px",
-                    borderRadius: "8px",
-                    marginTop: "20px"
-                }}>
-                    {error}
+                <div className="clients-message">
+                    <ErrorMessage
+                        message={error}
+                        onRetry={loadClients}
+                    />
                 </div>
             )}
 
             {success && (
-                <div style={{
-                    background: "#e7f7ef",
-                    color: "#087c4b",
-                    padding: "13px",
-                    borderRadius: "8px",
-                    marginTop: "20px"
-                }}>
-                    {success}
+                <div className="clients-message">
+                    <Notice
+                        type="success"
+                        message={success}
+                    />
                 </div>
             )}
 
-            {/* Create / Edit form */}
+            {/* Formulaire */}
             {showForm && (
-                <div style={{
-                    background: "white",
-                    padding: "25px",
-                    borderRadius: "14px",
-                    marginTop: "25px",
-                    boxShadow: "0 3px 15px rgba(0,0,0,0.04)"
-                }}>
-                    <h2 style={{
-                        color: "#012B1D",
-                        marginBottom: "22px"
-                    }}>
-                        {editingClient
-                            ? "Modifier le client"
-                            : "Nouveau client"}
-                    </h2>
+                <section className="clients-form-card">
+                    <div className="clients-form-header">
+                        <h2>
+                            {editingClient
+                                ? "Modifier le client"
+                                : "Nouveau client"}
+                        </h2>
+
+                        <button
+                            type="button"
+                            className="clients-close-button"
+                            onClick={closeForm}
+                            aria-label="Fermer le formulaire"
+                        >
+                            ×
+                        </button>
+                    </div>
 
                     <form onSubmit={handleSubmit}>
-                        <div style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                                "repeat(auto-fit, minmax(230px, 1fr))",
-                            gap: "15px"
-                        }}>
+                        <div className="clients-form-grid">
 
-                            <label style={labelStyle}>
+                            <label className="clients-field">
                                 Nom / Raison sociale *
                                 <input
-                                    style={inputStyle}
                                     name="nom"
                                     value={form.nom}
                                     onChange={handleChange}
@@ -287,10 +261,9 @@ export default function Clients() {
                                 />
                             </label>
 
-                            <label style={labelStyle}>
+                            <label className="clients-field">
                                 Email *
                                 <input
-                                    style={inputStyle}
                                     name="email"
                                     type="email"
                                     value={form.email}
@@ -300,10 +273,9 @@ export default function Clients() {
                             </label>
 
                             {!editingClient && (
-                                <label style={labelStyle}>
+                                <label className="clients-field">
                                     Mot de passe *
                                     <input
-                                        style={inputStyle}
                                         name="motDePasse"
                                         type="password"
                                         minLength={6}
@@ -314,20 +286,18 @@ export default function Clients() {
                                 </label>
                             )}
 
-                            <label style={labelStyle}>
+                            <label className="clients-field">
                                 Téléphone
                                 <input
-                                    style={inputStyle}
                                     name="telephone"
                                     value={form.telephone}
                                     onChange={handleChange}
                                 />
                             </label>
 
-                            <label style={labelStyle}>
+                            <label className="clients-field">
                                 Type de client *
                                 <select
-                                    style={inputStyle}
                                     name="typeClient"
                                     value={form.typeClient}
                                     onChange={handleChange}
@@ -335,26 +305,25 @@ export default function Clients() {
                                     <option value="PHYSIQUE">
                                         Personne physique
                                     </option>
+
                                     <option value="ENTREPRISE">
                                         Entreprise
                                     </option>
                                 </select>
                             </label>
 
-                            <label style={labelStyle}>
+                            <label className="clients-field">
                                 Identifiant fiscal
                                 <input
-                                    style={inputStyle}
                                     name="identifiantFiscal"
                                     value={form.identifiantFiscal}
                                     onChange={handleChange}
                                 />
                             </label>
 
-                            <label style={labelStyle}>
+                            <label className="clients-field">
                                 Adresse
                                 <input
-                                    style={inputStyle}
                                     name="adresse"
                                     value={form.adresse}
                                     onChange={handleChange}
@@ -362,10 +331,9 @@ export default function Clients() {
                             </label>
 
                             {isAdmin && (
-                                <label style={labelStyle}>
+                                <label className="clients-field">
                                     ID du comptable (facultatif)
                                     <input
-                                        style={inputStyle}
                                         name="comptableId"
                                         type="number"
                                         min="1"
@@ -377,22 +345,11 @@ export default function Clients() {
                             )}
                         </div>
 
-                        <div style={{
-                            display: "flex",
-                            gap: "12px",
-                            marginTop: "15px"
-                        }}>
+                        <div className="clients-form-actions">
                             <button
                                 type="submit"
+                                className="clients-save-button"
                                 disabled={saving}
-                                style={{
-                                    background: "#01B36C",
-                                    color: "white",
-                                    border: "none",
-                                    padding: "12px 22px",
-                                    borderRadius: "8px",
-                                    cursor: "pointer"
-                                }}
                             >
                                 {saving
                                     ? "Enregistrement..."
@@ -401,163 +358,115 @@ export default function Clients() {
 
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setShowForm(false);
-                                    setEditingClient(null);
-                                    setError("");
-                                }}
-                                style={{
-                                    background: "#f0f3f1",
-                                    color: "#012B1D",
-                                    border: "none",
-                                    padding: "12px 22px",
-                                    borderRadius: "8px",
-                                    cursor: "pointer"
-                                }}
+                                className="clients-cancel-button"
+                                onClick={closeForm}
+                                disabled={saving}
                             >
                                 Annuler
                             </button>
                         </div>
                     </form>
-                </div>
+                </section>
             )}
 
-            {/* Search and list */}
-            <div style={{
-                background: "white",
-                padding: "22px",
-                borderRadius: "14px",
-                marginTop: "25px",
-                boxShadow: "0 3px 15px rgba(0,0,0,0.04)"
-            }}>
-                <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: "15px",
-                    marginBottom: "20px"
-                }}>
-                    <h2 style={{ color: "#012B1D" }}>
+            {/* Liste des clients */}
+            <section className="clients-list-card">
+
+                <div className="clients-list-header">
+                    <h2>
                         Liste des clients ({filteredClients.length})
                     </h2>
 
                     <input
-                        type="text"
+                        type="search"
+                        className="clients-search"
                         placeholder="Rechercher un client..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        style={{
-                            padding: "11px 14px",
-                            border: "1px solid #dce5df",
-                            borderRadius: "8px",
-                            width: "270px",
-                            maxWidth: "100%"
-                        }}
                     />
                 </div>
 
                 {loading ? (
-                    <p>Chargement des clients...</p>
+                    <Loading message="Chargement des clients..." />
+                ) : filteredClients.length === 0 ? (
+                    <EmptyState
+                        title={
+                            search
+                                ? "Aucun résultat"
+                                : "Aucun client disponible"
+                        }
+                        message={
+                            search
+                                ? "Aucun client ne correspond à votre recherche."
+                                : "Les clients apparaîtront ici lorsqu'ils seront disponibles."
+                        }
+                    />
                 ) : (
-                    <div style={{ overflowX: "auto" }}>
-                        <table style={{
-                            width: "100%",
-                            borderCollapse: "collapse",
-                            textAlign: "left"
-                        }}>
+                    <div className="clients-table-container">
+                        <table className="clients-table">
                             <thead>
-                                <tr style={{
-                                    background: "#f5f8f6",
-                                    color: "#456052"
-                                }}>
-                                    {[
-                                        "Nom",
-                                        "Email",
-                                        "Téléphone",
-                                        "Type",
-                                        "Statut",
-                                        "Actions"
-                                    ].map((heading) => (
-                                        <th
-                                            key={heading}
-                                            style={{
-                                                padding: "14px",
-                                                fontSize: "13px"
-                                            }}
-                                        >
-                                            {heading}
-                                        </th>
-                                    ))}
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Email</th>
+                                    <th>Téléphone</th>
+                                    <th>Type</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
 
                             <tbody>
                                 {filteredClients.map((client) => (
                                     <tr key={client.id}>
-                                        <td style={tableCell}>
+                                        <td className="clients-name">
                                             {client.nom}
                                         </td>
 
-                                        <td style={tableCell}>
-                                            {client.email}
+                                        <td>{client.email}</td>
+
+                                        <td>
+                                            {client.telephone || "—"}
                                         </td>
 
-                                        <td style={tableCell}>
-                                            {client.telephone || "-"}
+                                        <td>
+                                            {client.typeClient === "PHYSIQUE"
+                                                ? "Personne physique"
+                                                : client.typeClient === "ENTREPRISE"
+                                                    ? "Entreprise"
+                                                    : client.typeClient || "—"}
                                         </td>
 
-                                        <td style={tableCell}>
-                                            {client.typeClient}
+                                        <td>
+                                            <StatusBadge
+                                                status={
+                                                    client.actif
+                                                        ? "actif"
+                                                        : "inactif"
+                                                }
+                                            />
                                         </td>
 
-                                        <td style={tableCell}>
-                                            <span style={{
-                                                background: client.actif
-                                                    ? "#e5f7ed"
-                                                    : "#f0eeee",
-                                                color: client.actif
-                                                    ? "#087c4b"
-                                                    : "#777",
-                                                padding: "5px 10px",
-                                                borderRadius: "20px",
-                                                fontSize: "12px"
-                                            }}>
-                                                {client.actif
-                                                    ? "Actif"
-                                                    : "Inactif"}
-                                            </span>
-                                        </td>
-
-                                        <td style={tableCell}>
-                                            <div style={{
-                                                display: "flex",
-                                                gap: "8px"
-                                            }}>
+                                        <td>
+                                            <div className="clients-actions">
                                                 {isAdmin && (
                                                     <button
+                                                        type="button"
+                                                        className="clients-edit-button"
                                                         onClick={() =>
                                                             openEditForm(client)
                                                         }
-                                                        style={actionButton}
                                                     >
                                                         Modifier
                                                     </button>
                                                 )}
 
                                                 <button
+                                                    type="button"
+                                                    className="clients-delete-button"
                                                     onClick={() =>
                                                         handleDelete(client)
                                                     }
                                                     disabled={!client.actif}
-                                                    style={{
-                                                        ...actionButton,
-                                                        background: "#fff0ed",
-                                                        color: "#bd493d",
-                                                        opacity: client.actif
-                                                            ? 1
-                                                            : 0.4
-                                                    }}
                                                 >
                                                     Désactiver
                                                 </button>
@@ -565,44 +474,11 @@ export default function Clients() {
                                         </td>
                                     </tr>
                                 ))}
-
-                                {filteredClients.length === 0 && (
-                                    <tr>
-                                        <td
-                                            colSpan="6"
-                                            style={{
-                                                padding: "25px",
-                                                textAlign: "center",
-                                                color: "#888"
-                                            }}
-                                        >
-                                            Aucun client trouvé.
-                                        </td>
-                                    </tr>
-                                )}
                             </tbody>
                         </table>
                     </div>
                 )}
-            </div>
+            </section>
         </div>
     );
 }
-
-const tableCell = {
-    padding: "15px 14px",
-    borderBottom: "1px solid #edf0ee",
-    fontSize: "14px",
-    color: "#34483d"
-};
-
-const actionButton = {
-    border: "none",
-    background: "#fff3e9",
-    color: "#a85c35",
-    padding: "7px 10px",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontSize: "12px",
-    whiteSpace: "nowrap"
-};
